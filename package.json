@@ -1,0 +1,18 @@
+{
+  "name": "mopidybot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Telegram bot for interacting with a Mopidy music server.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "tylerjdurden",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.4",
+    "mopidy": "^0.5.0",
+    "telegram-node-bot": "^2.1.2"
+  }
+}
