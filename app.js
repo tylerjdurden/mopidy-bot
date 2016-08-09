@@ -445,9 +445,11 @@ tg.controller('SearchController', ($) => {
 						//Either browse tracks or albums
 						$.runMenu({
 							message: 'Do you want to browse tracks or albums?',
-							layout: 1,
+							layout: 2,
 							'Tracks': () => {browse($, true, data, index)},
 							'Albums': () => {browse($, false, data, index)},
+							'End search': () => {},
+							'Start over': () => {startOver();}
 						});
 					});
 			});
