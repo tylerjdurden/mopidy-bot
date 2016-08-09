@@ -237,13 +237,13 @@ tg.controller('SearchController', ($) => {
 				'Entire album': () => {
 					// console.log('[DEBUG]: data[index] is:');
 					// console.log(data[index]);
-					// console.log('albumNo is: ');
-					// console.log(albumNo);
+					console.log('albumNo is: ');
+					console.log(albumNo);
 					console.log(data[index]['albums'][albumNo]);	
 					console.log('\n');
 					
-					var albumIndex = albumNo - 1;
-					mopidy.tracklist.add({"tracks":null,"at_position":null,"uri":data[index]['albums'][albumIndex]['uri'],"uris":null})
+					// var albumIndex = albumNo - 1;
+					mopidy.tracklist.add({"tracks":null,"at_position":null,"uri":data[index]['albums'][albumNo]['uri'],"uris":null})
 						.then(function(data){
 							$.sendMessage('Album enqueued.');
 						});
@@ -277,7 +277,7 @@ tg.controller('SearchController', ($) => {
 							menu[(data_idx+1).toString()] = () => {enqueue_track($, data, index, data_idx);};
 							data_cb(null);
 						}, function(){
-							menu['Start over'] = () => {startOver();};
+							menu['Start over'] = () => {};
 							$.runMenu(menu);
 						});
 					});
@@ -355,7 +355,7 @@ tg.controller('SearchController', ($) => {
 								// 		+ data[index][chosen_medium][j]['name'] + '\n';
 								getSongArtists(item, function(artists){
 									message += (idx+1) + '. ' + artists + ' - ' + item['name'] + '\n';
-									// cb();
+									cb();
 								});
 							}
 
@@ -378,11 +378,10 @@ tg.controller('SearchController', ($) => {
 												message += append;
 											}
 										}
-										// cb();
+										cb();
 								});
 							}
 							idx++;
-							cb();
 						}, function() {
 							callback(null, message);
 						});
@@ -403,7 +402,8 @@ tg.controller('SearchController', ($) => {
 							menu[(idx+1).toString()] = () => {enqueue($, chosen_medium, data, index, idx);};
 							my_cb(null);	
 						}, function(){
-							menu['Start over'] = () => {startOver();};
+							// menu['Start over'] = () => {startOver();};
+							menu['End search'] = () => {};
 
 							console.log('running menu');
 							$.runMenu(menu);
