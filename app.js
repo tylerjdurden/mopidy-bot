@@ -13,7 +13,31 @@ var mopidy = new Mopidy({
 //log everything
 //mopidy.on(console.log.bind(console));
 
-var getSongArtists = function(song, callback) {
+function range(start, stop, step) {
+	if (typeof stop == 'undefined') {
+		// one param defined
+		stop = start;
+		start = 0;
+	}
+
+	if (typeof step == 'undefined') {
+		step = 1;
+	}
+
+	if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
+		return [];
+	}
+
+	var result = [];
+	for (var i = start; step > 0 ? i < stop : i > stop; i += step) {
+		result.push(i);
+	}
+
+	return result;
+};
+
+// var getSongArtists = function(song, callback) {
+function getSongArtists(song, callback) {
 	var artists = '';
 	try{
 		// console.log('song is: ');
@@ -57,9 +81,12 @@ tg.controller('StartController', ($) => {
 //Displays help message
 tg.controller('HelpController', ($) => {
 	var help_message = 
-		'Type /help to see this message.' + '\n' + 
+		'Type /help to see this message.' + '\n' +
 		'Type /ping for me to reply with "pong!"' + '\n' +
-		'Type /search to begin searching for music.' + '\n'
+		'Type /search to begin searching for music.' + '\n' +
+		'Type /queue to see the music queue.' + '\n' +
+		'Type /clear to clear the queue.' + '\n' +
+		'Type /playpause to play the music if it\'s paused, or vice versa.' + '\n'
 		;
 
 	tg.for('/help', () => {
@@ -188,10 +215,11 @@ tg.controller('SearchController', ($) => {
 		}
 
 		function enqueue_track($, data, index, trackNo){
-			// console.log('in enqueue_track, data is: ');
-			// console.log(data);
-			var trackIndex = trackNo - 1;
-			mopidy.tracklist.add({"tracks":null,"at_position":null,"uri":data[trackIndex]['uri'],"uris":null})
+			console.log('in enqueue_track, data is: ');
+			console.log(data);
+			// var trackIndex = trackNo - 1;
+			console.log('trackNo is: ' + trackNo.toString());
+			mopidy.tracklist.add({"tracks":null,"at_position":null,"uri":data[index]['tracks'][trackNo]['uri'],"uris":null})
 				.then(function(data){
 					$.sendMessage('Track enqueued.');
 					//mopidy.tracklist.getTracks({}).then(function(data){
@@ -221,10 +249,14 @@ tg.controller('SearchController', ($) => {
 						});
 				},
 				'Single track': () => {
-					var albumIndex = albumNo - 1;
+					// var albumIndex = albumNo - 1;
 					var overall_max = 5;
 					var max = (data[index]['tracks'].length > overall_max) ? overall_max : data[index]['tracks'].length;
-					mopidy.library.browse({"uri":data[index]['albums'][albumIndex]['uri']}).then(function(data){
+					console.log('data is: ');
+					console.log(data);
+					// console.log('albumIndex is: ');
+					// console.log(albumIndex);
+					mopidy.library.browse({"uri":data[index]['albums'][albumNo]['uri']}).then(function(data){
 						//console.log(data);
 						var message = '';
 						for(var i = 0;i < data.length;++i){
@@ -239,15 +271,15 @@ tg.controller('SearchController', ($) => {
 
 						// append the track buttons
 						// (callbacks for buttons 1 through n)
-						for(var i = 0;i < data.length;++i){
+						// for(var i = 0;i < data.length;++i){
+						async.eachOfSeries(data, function(data_item, data_idx, data_cb){
 							// is index correct?
-							// somehow i was 9 when enqueueing track 8 (which is in turn index 7)
-							// so i-1 here
-							menu[(i+1).toString()] = () => {enqueue_track($, data, index, i-1);};
-						}
-						menu['Start over'] = () => {startOver();};
-
-						$.runMenu(menu);
+							menu[(data_idx+1).toString()] = () => {enqueue_track($, data, index, data_idx);};
+							data_cb(null);
+						}, function(){
+							menu['Start over'] = () => {startOver();};
+							$.runMenu(menu);
+						});
 					});
 				}
 			});
@@ -321,10 +353,10 @@ tg.controller('SearchController', ($) => {
 								// message += (j+1) + '. ' 
 								// 		+ getSongArtists(data[index][chosen_medium][j]) + ' - ' 
 								// 		+ data[index][chosen_medium][j]['name'] + '\n';
-								message += (idx) + '. ' 
-									+ getSongArtists(item) + ' - ' 
-									+ item['name'] + '\n';
-								cb();
+								getSongArtists(item, function(artists){
+									message += (idx+1) + '. ' + artists + ' - ' + item['name'] + '\n';
+									// cb();
+								});
 							}
 
 							else {
@@ -346,10 +378,11 @@ tg.controller('SearchController', ($) => {
 												message += append;
 											}
 										}
-										cb();
+										// cb();
 								});
 							}
 							idx++;
+							cb();
 						}, function() {
 							callback(null, message);
 						});
@@ -365,17 +398,18 @@ tg.controller('SearchController', ($) => {
 						//append the top max functions to the menu 
 						//(callbacks for buttons 1 through n)
 						// for(var i = 0;i < max;++i){
-						// TODO: start here. make this a series for loop
-						async.eachOfSeries(/*stuff*/{
+						async.eachSeries(range(max), function(idx, my_cb){
 							// is index correct?
-							menu[(i+1).toString()] = () => {enqueue($, chosen_medium, data, index, i);};
-						});
-						menu['Start over'] = () => {startOver();};
+							menu[(idx+1).toString()] = () => {enqueue($, chosen_medium, data, index, idx);};
+							my_cb(null);	
+						}, function(){
+							menu['Start over'] = () => {startOver();};
 
-						console.log('running menu');
-						$.runMenu(menu);
-						console.log('calling callback');
-						callback(null);
+							console.log('running menu');
+							$.runMenu(menu);
+							console.log('calling callback');
+							callback(null);
+						});
 					}
 			]);
 		} 
